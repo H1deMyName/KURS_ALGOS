@@ -34,7 +34,7 @@ class ClinicViewModel : ViewModel() {
 
     // --- ГЕНЕРАТОР (20 ВРАЧЕЙ + ПАЦИЕНТЫ + ЗАПИСИ) ---
     fun generateTestData() {
-        // Очищаем перед генерацией, чтобы не дублировать
+        // Очищаем перед генерацией чтобы не дублировать
         clearAllData()
 
         val pts = listOf(
