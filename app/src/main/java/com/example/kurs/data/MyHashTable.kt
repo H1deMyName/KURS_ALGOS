@@ -13,7 +13,7 @@ class MyHashTable<V>(private val capacity: Int = 101) {
     private var table = Array(capacity) { Entry<V>() }
     private var size = 0
 
-    // Основная хеш-функция (h1)
+    // Основная хеш-функция (h1)ы
     private fun hash1(key: String): Int = Math.abs(key.hashCode()) % capacity
 
     // Вторая хеш-функция для шага (h2) - двойное хеширование (рис. 2.6)
