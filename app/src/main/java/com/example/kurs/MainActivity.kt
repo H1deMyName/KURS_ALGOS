@@ -119,7 +119,7 @@ fun DoctorScreen(vm: ClinicViewModel) {
     val doctors by vm.doctors.collectAsState()
     var searchQuery by remember { mutableStateOf("") }
 
-    // Поля для ручного добавления врача1
+    // Поля для ручного добавления врача
     var dFio by remember { mutableStateOf("") }
     var dPost by remember { mutableStateOf("") }
     var dCab by remember { mutableStateOf("") }
