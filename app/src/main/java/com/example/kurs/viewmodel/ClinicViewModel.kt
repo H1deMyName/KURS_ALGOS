@@ -32,7 +32,7 @@ class ClinicViewModel : ViewModel() {
         return null
     }
 
-    // --- ГЕНЕРАТОР (20 ВРАЧЕЙ + ПАЦИЕНТЫ + ЗАПИСИ) ---
+    // --- ГЕНЕРАТОР (20 ВРAЧЕЙ + ПАЦИЕНТЫ + ЗАПИСИ) ---
     fun generateTestData() {
         // Очищаем перед генерацией чтобы не дублировать
         clearAllData()
