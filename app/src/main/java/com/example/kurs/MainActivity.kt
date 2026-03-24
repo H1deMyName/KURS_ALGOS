@@ -8,10 +8,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.DateRange
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.MedicalServices
-import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -29,7 +26,6 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         setContent {
             KursTheme {
-                // Главный контейнер приложения
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
@@ -51,7 +47,11 @@ fun MainScreen(vm: ClinicViewModel = viewModel()) {
             CenterAlignedTopAppBar(
                 title = { Text("Поликлиника 279") },
                 actions = {
-                    IconButton(onClick = { vm.clearAllData() }) { // Операция очистки по ТЗ [cite: 1541]
+                    // НОВОЕ: Кнопка генерации тестовых данных
+                    IconButton(onClick = { vm.generateTestData() }) {
+                        Icon(Icons.Default.AddCircle, contentDescription = "Заполнить данными")
+                    }
+                    IconButton(onClick = { vm.clearAllData() }) {
                         Icon(Icons.Default.Delete, contentDescription = "Очистить всё")
                     }
                 }
@@ -80,7 +80,6 @@ fun MainScreen(vm: ClinicViewModel = viewModel()) {
             }
         }
     ) { padding ->
-        // Использование Box для правильного наложения контента с учетом отступов Scaffold
         Box(modifier = Modifier.padding(padding).fillMaxSize()) {
             when (selectedTab) {
                 0 -> PatientScreen(vm)
@@ -96,9 +95,10 @@ fun PatientScreen(vm: ClinicViewModel) {
     val patients by vm.patients.collectAsState()
     var id by remember { mutableStateOf("") }
     var fio by remember { mutableStateOf("") }
+    val context = LocalContext.current // Для показа Toast
 
     Column(modifier = Modifier.padding(16.dp)) {
-        Text("Регистрация больного", style = MaterialTheme.typography.titleMedium) // [cite: 1531]
+        Text("Регистрация больного", style = MaterialTheme.typography.titleMedium)
         OutlinedTextField(
             value = id,
             onValueChange = { id = it },
@@ -114,8 +114,14 @@ fun PatientScreen(vm: ClinicViewModel) {
 
         Button(
             onClick = {
-                vm.registerPatient(Patient(id, fio, 2000, "Ул. Пушкина", "Завод"))
-                id = ""; fio = ""
+                // НОВОЕ: Проверка данных перед добавлением
+                val error = vm.validatePatientData(id, fio)
+                if (error == null) {
+                    vm.registerPatient(Patient(id, fio, 2000, "Ул. Пушкина", "Завод"))
+                    id = ""; fio = ""
+                } else {
+                    Toast.makeText(context, error, Toast.LENGTH_SHORT).show()
+                }
             },
             modifier = Modifier.padding(top = 8.dp).align(Alignment.End)
         ) { Text("Добавить") }
@@ -133,7 +139,7 @@ fun PatientScreen(vm: ClinicViewModel) {
                             Text(p.fio, style = MaterialTheme.typography.bodyLarge)
                             Text(p.id, style = MaterialTheme.typography.bodySmall)
                         }
-                        IconButton(onClick = { vm.removePatient(p.id) }) { // [cite: 1532]
+                        IconButton(onClick = { vm.removePatient(p.id) }) {
                             Icon(Icons.Default.Delete, contentDescription = null)
                         }
                     }
@@ -150,7 +156,6 @@ fun DoctorScreen(vm: ClinicViewModel) {
 
     Column(modifier = Modifier.padding(16.dp)) {
         Text("Реестр врачей", style = MaterialTheme.typography.titleMedium)
-        // Поиск по фрагменту должности с использованием прямого поиска
         OutlinedTextField(
             value = searchQuery,
             onValueChange = {
@@ -161,6 +166,7 @@ fun DoctorScreen(vm: ClinicViewModel) {
             modifier = Modifier.fillMaxWidth()
         )
 
+        // Можно оставить как тест, но теперь у нас есть кнопка "Генерация" в шапке
         Button(
             onClick = { vm.registerDoctor(Doctor("Петров И.С.", "Терапевт", 204, "8:00-14:00")) },
             modifier = Modifier.padding(top = 8.dp).align(Alignment.End)
@@ -189,17 +195,19 @@ fun AppointmentScreen(vm: ClinicViewModel) {
     var time by remember { mutableStateOf("10:00") }
 
     Column(modifier = Modifier.padding(16.dp)) {
-        Text("Выдача направления", style = MaterialTheme.typography.titleMedium) // [cite: 1544]
+        Text("Выдача направления", style = MaterialTheme.typography.titleMedium)
         OutlinedTextField(value = pId, onValueChange = { pId = it }, label = { Text("ID Больного") }, modifier = Modifier.fillMaxWidth())
         OutlinedTextField(value = dFio, onValueChange = { dFio = it }, label = { Text("ФИО Врача") }, modifier = Modifier.fillMaxWidth())
         OutlinedTextField(value = time, onValueChange = { time = it }, label = { Text("Время") }, modifier = Modifier.fillMaxWidth())
 
         Button(
             onClick = {
-                // Проверка занятости времени по п. 9.4.12
-                val success = vm.createAppointment(pId, dFio, "25.03.2026", time)
-                if (!success) {
-                    Toast.makeText(context, "Это время уже занято!", Toast.LENGTH_SHORT).show()
+                // ОБНОВЛЕНО: Используем новую логику возврата ошибки строкой
+                val error = vm.createAppointment(pId, dFio, "25.03.2026", time)
+                if (error != null) {
+                    Toast.makeText(context, error, Toast.LENGTH_SHORT).show()
+                } else {
+                    pId = ""; dFio = ""
                 }
             },
             modifier = Modifier.padding(top = 8.dp).align(Alignment.End)
