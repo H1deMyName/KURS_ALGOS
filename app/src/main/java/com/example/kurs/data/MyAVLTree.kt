@@ -95,7 +95,17 @@ class MyAVLTree {
         traverse(root)
         return res
     }
+    fun get(fio: String): Doctor? {
+        var curr = root
+        while (curr != null) {
+            // Сравниваем строки: используем .value.fio
+            if (fio == curr.value.fio) return curr.value
 
+            // Если искомое имя "меньше" текущего — идем влево, иначе вправо
+            curr = if (fio < curr.value.fio) curr.left else curr.right
+        }
+        return null
+    }
     fun getAll(): List<Doctor> {
         val res = mutableListOf<Doctor>()
         fun traverse(n: Node?) {
