@@ -26,10 +26,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         setContent {
             KursTheme {
-                Surface(
-                    modifier = Modifier.fillMaxSize(),
-                    color = MaterialTheme.colorScheme.background
-                ) {
+                Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
                     MainScreen()
                 }
             }
@@ -47,9 +44,8 @@ fun MainScreen(vm: ClinicViewModel = viewModel()) {
             CenterAlignedTopAppBar(
                 title = { Text("Поликлиника 279") },
                 actions = {
-                    // НОВОЕ: Кнопка генерации тестовых данных
                     IconButton(onClick = { vm.generateTestData() }) {
-                        Icon(Icons.Default.AddCircle, contentDescription = "Заполнить данными")
+                        Icon(Icons.Default.AddCircle, contentDescription = "Заполнить")
                     }
                     IconButton(onClick = { vm.clearAllData() }) {
                         Icon(Icons.Default.Delete, contentDescription = "Очистить всё")
@@ -59,24 +55,9 @@ fun MainScreen(vm: ClinicViewModel = viewModel()) {
         },
         bottomBar = {
             NavigationBar {
-                NavigationBarItem(
-                    selected = selectedTab == 0,
-                    onClick = { selectedTab = 0 },
-                    label = { Text("Больные") },
-                    icon = { Icon(Icons.Default.Person, null) }
-                )
-                NavigationBarItem(
-                    selected = selectedTab == 1,
-                    onClick = { selectedTab = 1 },
-                    label = { Text("Врачи") },
-                    icon = { Icon(Icons.Default.MedicalServices, null) }
-                )
-                NavigationBarItem(
-                    selected = selectedTab == 2,
-                    onClick = { selectedTab = 2 },
-                    label = { Text("Записи") },
-                    icon = { Icon(Icons.Default.DateRange, null) }
-                )
+                NavigationBarItem(selectedTab == 0, { selectedTab = 0 }, label = { Text("Больные") }, icon = { Icon(Icons.Default.Person, null) })
+                NavigationBarItem(selectedTab == 1, { selectedTab = 1 }, label = { Text("Врачи") }, icon = { Icon(Icons.Default.MedicalServices, null) })
+                NavigationBarItem(selectedTab == 2, { selectedTab = 2 }, label = { Text("Записи") }, icon = { Icon(Icons.Default.DateRange, null) })
             }
         }
     ) { padding ->
@@ -95,29 +76,18 @@ fun PatientScreen(vm: ClinicViewModel) {
     val patients by vm.patients.collectAsState()
     var id by remember { mutableStateOf("") }
     var fio by remember { mutableStateOf("") }
-    val context = LocalContext.current // Для показа Toast
+    val context = LocalContext.current
 
     Column(modifier = Modifier.padding(16.dp)) {
         Text("Регистрация больного", style = MaterialTheme.typography.titleMedium)
-        OutlinedTextField(
-            value = id,
-            onValueChange = { id = it },
-            label = { Text("Номер (MM-NNNNNN)") },
-            modifier = Modifier.fillMaxWidth()
-        )
-        OutlinedTextField(
-            value = fio,
-            onValueChange = { fio = it },
-            label = { Text("ФИО пациента") },
-            modifier = Modifier.fillMaxWidth()
-        )
+        OutlinedTextField(id, { id = it }, label = { Text("Номер (MM-NNNNNN)") }, modifier = Modifier.fillMaxWidth())
+        OutlinedTextField(fio, { fio = it }, label = { Text("ФИО пациента") }, modifier = Modifier.fillMaxWidth())
 
         Button(
             onClick = {
-                // НОВОЕ: Проверка данных перед добавлением
                 val error = vm.validatePatientData(id, fio)
                 if (error == null) {
-                    vm.registerPatient(Patient(id, fio, 2000, "Ул. Пушкина", "Завод"))
+                    vm.registerPatient(Patient(id, fio, 2000, "СПб", "Работа"))
                     id = ""; fio = ""
                 } else {
                     Toast.makeText(context, error, Toast.LENGTH_SHORT).show()
@@ -131,17 +101,12 @@ fun PatientScreen(vm: ClinicViewModel) {
         LazyColumn {
             items(patients) { p ->
                 Card(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
-                    Row(
-                        modifier = Modifier.padding(16.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
+                    Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
                         Column(modifier = Modifier.weight(1f)) {
                             Text(p.fio, style = MaterialTheme.typography.bodyLarge)
                             Text(p.id, style = MaterialTheme.typography.bodySmall)
                         }
-                        IconButton(onClick = { vm.removePatient(p.id) }) {
-                            Icon(Icons.Default.Delete, contentDescription = null)
-                        }
+                        IconButton(onClick = { vm.removePatient(p.id) }) { Icon(Icons.Default.Delete, null) }
                     }
                 }
             }
@@ -154,30 +119,47 @@ fun DoctorScreen(vm: ClinicViewModel) {
     val doctors by vm.doctors.collectAsState()
     var searchQuery by remember { mutableStateOf("") }
 
+    // Поля для ручного добавления врача
+    var dFio by remember { mutableStateOf("") }
+    var dPost by remember { mutableStateOf("") }
+    var dCab by remember { mutableStateOf("") }
+
     Column(modifier = Modifier.padding(16.dp)) {
+        Text("Добавить врача", style = MaterialTheme.typography.titleMedium)
+        OutlinedTextField(dFio, { dFio = it }, label = { Text("ФИО врача") }, modifier = Modifier.fillMaxWidth())
+        OutlinedTextField(dPost, { dPost = it }, label = { Text("Должность") }, modifier = Modifier.fillMaxWidth())
+        OutlinedTextField(dCab, { dCab = it }, label = { Text("Кабинет") }, modifier = Modifier.fillMaxWidth())
+
+        Button(
+            onClick = {
+                if (dFio.isNotBlank() && dPost.isNotBlank()) {
+                    vm.registerDoctor(Doctor(dFio, dPost, dCab.toIntOrNull() ?: 0, "8:00-16:00"))
+                    dFio = ""; dPost = ""; dCab = ""
+                }
+            },
+            modifier = Modifier.padding(top = 8.dp).align(Alignment.End)
+        ) { Text("Сохранить") }
+
+        HorizontalDivider(modifier = Modifier.padding(vertical = 16.dp))
+
         Text("Реестр врачей", style = MaterialTheme.typography.titleMedium)
         OutlinedTextField(
             value = searchQuery,
-            onValueChange = {
-                searchQuery = it
-                vm.searchDoctorsByPosition(it)
-            },
+            onValueChange = { searchQuery = it; vm.searchDoctorsByPosition(it) },
             label = { Text("Поиск по должности") },
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(),
+            leadingIcon = { Icon(Icons.Default.Search, null) }
         )
 
-        // Можно оставить как тест, но теперь у нас есть кнопка "Генерация" в шапке
-        Button(
-            onClick = { vm.registerDoctor(Doctor("Петров И.С.", "Терапевт", 204, "8:00-14:00")) },
-            modifier = Modifier.padding(top = 8.dp).align(Alignment.End)
-        ) { Text("Тест: Добавить врача") }
-
-        LazyColumn(modifier = Modifier.padding(top = 16.dp)) {
+        LazyColumn(modifier = Modifier.padding(top = 8.dp)) {
             items(doctors) { d ->
                 Card(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
-                    Column(modifier = Modifier.padding(16.dp)) {
-                        Text(d.fio, style = MaterialTheme.typography.bodyLarge)
-                        Text("${d.position} | Каб. ${d.cabinet}", style = MaterialTheme.typography.bodyMedium)
+                    Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(d.fio, style = MaterialTheme.typography.bodyLarge)
+                            Text("${d.position} | Каб. ${d.cabinet}", style = MaterialTheme.typography.bodyMedium)
+                        }
+                        IconButton(onClick = { vm.removeDoctor(d.fio) }) { Icon(Icons.Default.Delete, null) }
                     }
                 }
             }
@@ -196,13 +178,12 @@ fun AppointmentScreen(vm: ClinicViewModel) {
 
     Column(modifier = Modifier.padding(16.dp)) {
         Text("Выдача направления", style = MaterialTheme.typography.titleMedium)
-        OutlinedTextField(value = pId, onValueChange = { pId = it }, label = { Text("ID Больного") }, modifier = Modifier.fillMaxWidth())
-        OutlinedTextField(value = dFio, onValueChange = { dFio = it }, label = { Text("ФИО Врача") }, modifier = Modifier.fillMaxWidth())
-        OutlinedTextField(value = time, onValueChange = { time = it }, label = { Text("Время") }, modifier = Modifier.fillMaxWidth())
+        OutlinedTextField(pId, { pId = it }, label = { Text("ID Больного") }, modifier = Modifier.fillMaxWidth())
+        OutlinedTextField(dFio, { dFio = it }, label = { Text("ФИО Врача") }, modifier = Modifier.fillMaxWidth())
+        OutlinedTextField(time, { time = it }, label = { Text("Время") }, modifier = Modifier.fillMaxWidth())
 
         Button(
             onClick = {
-                // ОБНОВЛЕНО: Используем новую логику возврата ошибки строкой
                 val error = vm.createAppointment(pId, dFio, "25.03.2026", time)
                 if (error != null) {
                     Toast.makeText(context, error, Toast.LENGTH_SHORT).show()
